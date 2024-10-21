@@ -1,4 +1,4 @@
-# Version B
+# simple CR version
 from flask import Flask, request, jsonify, session, render_template_string
 from flask import Flask, request, make_response
 import requests
@@ -94,10 +94,35 @@ def api_process_drawing():
 def generate_prompt(description, colors=None):
     if colors:
         color_description = ', '.join(colors)
-        prompt = f"Create an abstract drawing for children, using the colors {color_description} and inspired by the theme '{description}'."
+        prompt = (
+            f"Create a purely visual artistic oil painting drawing using the colors {color_description}, "
+            f"that reimagines '{description}' in a positive manner. For example, transforming a gloomy cloud "
+            f"into a scene with a rainbow. The image must focus entirely on visual elements without any text, "
+            f"letters, or numbers."
+        )
     else:
-        prompt = f"Create an abstract drawing for children, inspired by the theme '{description}'."
+        prompt = (
+            f"Create a purely visual artistic oil painting drawing that reimagines '{description}' in a positive manner. "
+            f"For example, transforming a gloomy cloud into a scene with a rainbow. The image must focus entirely "
+            f"on visual elements without any text, letters, or numbers."
+        )
     return prompt
+
+
+def generate_reappraisal_text(description):
+    try:
+        response = openai.Completion.create(
+            engine="gpt-3.5-turbo-instruct",
+            prompt=f"Generate a positive cognitive reappraisal advice for a child's description: {description}",
+            max_tokens=80
+        )
+        if 'choices' in response and len(response.choices) > 0:
+            return response.choices[0].text.strip()
+        else:
+            return "Failed to generate meaningful output. Please refine the prompt."
+    except Exception as e:
+        print(f"Error generating reappraisal text: {str(e)}")
+        return "Could not generate reappraisal text."
 
 
 def call_dalle_api(prompt, n=2):
@@ -113,9 +138,9 @@ def call_dalle_api(prompt, n=2):
 
 
 predefined_sentences = {
-    4: "Let's draw and then write down your response. Please use the 'Visual Metaphor' on the right when you draw.",
-    5: "Let's draw and then write down your response. Please use the 'Visual Metaphor' on the right when you draw.",
-    6: "Thank you for participating in the session."
+    4: "Let's draw. Please use 'Visual Metaphor' on the right.",
+    5: "Let's draw. Please use 'Visual Metaphor' on the right.",
+    6: "Thank you for participating in the session. You can restart the session if you want to explore more."
 }
 
 
@@ -124,12 +149,12 @@ import re
 def generate_art_therapy_question(api_key, question_number, session_history):
     openai.api_key = api_key
     question_prompts = [
-        "Generate a question to ask users about their current emotion. Please use an easy and friendly tone suitable for children",
-        "Based on the previous responses, generate a question for identifying and describing the emotion, such as asking about the intensity of the emotion or where in the body it is felt the most. Please use an easy and friendly tone suitable for children, incorporating some metaphors. Do not use "" and quoation mark in a sentence.",
-        "Based on the previous responses, generate a question that explores the context, such as asking what triggered this emotion or describing the situation or thought that led to these feelings. Please use an easy and friendly tone suitable for children, incorporating some metaphors. Do not use "" and quoation mark in a sentence.",
-        "Based on the previous responses, generate a question that asks the user to describe and visualize their emotion as an 'abstract shape or symbol' to create their own metaphor for their mind. Please use an easy and friendly tone suitable for children, incorporating some metaphors. Do not use "" and quoation mark in a sentence.",
-        "Based on the previous responses, generate a question that asks the user to describe and visualize their emotions as a 'texture' to create their own metaphor for their mind. Please use an easy and friendly tone suitable for children, incorporating some metaphors. Do not use "" and quoation mark in a sentence.",
-        "Based on the previous responses, provide a short summary of users' previous responses in a natrual tone, address the reader by using 'you'. Then, as a therapist, provide ACT (Acceptance and Commitment Therapy) advice catered to users’ response using easy and friendly tone suitable for children, incorporating some metaphors. For example, as an ACT therapist, provide reappraisal advice to help users to accept emotions, or help them to change the context of emotions if users’ emotion was negative. Ensure the summary and advice are clear and directly address the reader by using 'you' to make the steps easy to follow and implement. The guide should be user-friendly and reflect users' previous responses."
+        "Generate a question to ask user (children) about their current emotion. Do not use 'kiddo'.",
+        "Based on the previous responses, generate a short question for identifying and describing the emotion, such as asking about the intensity of the emotion or where in the body it is felt the most. Users are kids, so please use easy and friendly expressions.",
+        "Based on the previous responses, generate a short question that explores the context, such as asking what triggered this emotion or describing the situation or thought that led to these feelings. Users are kids, so please use easy and friendly expressions.",
+        "Based on the previous responses, generate a short question that asks the user to describe and visualize their emotion as an 'abstract shape or symbol' to create their own metaphor for their mind. Users are kids, so please use easy and friendly expressions, and provide some metaphors or examples.",
+        "Based on the previous responses, generate a short question that asks the user to describe and visualize their emotions as a 'texture' to create their own metaphor for their mind. Users are kids, so please use easy and friendly expressions, and provide some metaphors or examples.",
+        "Based on the previous responses, generate a short, easy-to-understand summary for kids. Use friendly language that reflects the emotions they expressed. Then, provide personalized advice to help them reappraise their emotions or practice cognitive defusion, incorporating a playful and engaging approach consistent with ACT theory. Make sure the advice is directly relevant to the emotions and thoughts shared by the child, using examples or activities that are fun and easy for kids to understand. Also, make this less than three sentences."
     ]
 
     user_responses = " ".join([resp for who, resp in session_history if who == 'You'])
@@ -585,6 +610,9 @@ def home():
                     </div>
                     <div id="images">
                         <!-- Dynamically added images will go here -->
+                    </div>
+                    <div id="reappraisalText" style="padding: 20px; font-size: 16px; color: #333;">
+                        <!-- Reappraisal text will appear here -->
                     </div>
                 </div>
 
