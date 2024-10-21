@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/longTask.js": {
+      "memory": 3009,
+      "maxDuration": 60
+    },
+    "api/quickTask.js": {
+      "memory": 512,
+      "maxDuration": 10
+    }
+  }
+}
